@@ -2,7 +2,6 @@
 
 (require "module-lang-utils.rkt"
          "to-string.rkt"
-         markdown
          racket/contract
          (for-syntax racket/base))
 
@@ -48,25 +47,17 @@
   (define (md-read-syntax src in)
     (with-syntax ([stx (my-at-reader src in)])
       (strip-context
-       #`(module anything frollen/markdown
+       #`(module anything frollen/pre
            stx)))))
 ; end of reader module
 
 
-
-; takes a list of values, converts them to strings,
-; creates one big string from them, uses `parse-markdown`
-; to parse the string, and applies the given root-proc
-; to the resulting x-expression
-(define/contract (values->parsed-markdown list-of-values root-proc)
-  (-> list? procedure? list?)
-  (apply root-proc
-         (parse-markdown (apply string-append
-                                (map to-string
-                                     list-of-values)))))
-
+; convert values to strings, conglomerate into 1 string,
+; and ignore given root-proc
+(define (accumulate-to-string list-of-values root-proc)
+  (apply string-append (map to-string list-of-values)))
 
 ; create a string accumulating module begin using
-; `parse-markdown` to parse the accumulated string
+; `accumulate-to-string` to parse the accumulated string
 (define-syntax md-module-begin
-  (make-accumulating-module-begin #'values->parsed-markdown))
+  (make-accumulating-module-begin #'accumulate-to-string))

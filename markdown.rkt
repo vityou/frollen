@@ -1,14 +1,18 @@
 #lang racket/base
 
 (require "module-lang-utils.rkt"
+         "to-string.rkt"
          markdown
-         (for-syntax racket/base))
+         racket/contract
+         (for-syntax racket/base
+                     syntax/parse))
 
 (provide (rename-out [md-module-begin #%module-begin]
                      [tag-top #%top])
          (except-out (all-from-out racket/base)
                      #%module-begin
                      #%top))
+
 
 ; create reader module
 (module reader racket/base
@@ -23,7 +27,7 @@
   (define my-at-reader (make-at-reader #:inside? #t
                                        #:syntax? #t))
 
-  ; read just uses read-syntax
+  ; read just uses read-syntax defined below
   (define (md-read in)
     (syntax->datum
      (md-read-syntax #f in)))
@@ -50,7 +54,19 @@
 ; end of reader module
 
 
+; takes a list of values, converts them to strings,
+; creates one big string from them, uses `parse-markdown`
+; to parse the string, and applies the given root-proc
+; to the resulting x-expression
+(define/contract (values->parsed-markdown list-of-values root-proc)
+  (-> list? procedure? list?)
+  (apply root-proc
+         (parse-markdown (apply string-append
+                                (map to-string
+                                     list-of-values)))))
+
+
 ; create a string accumulating module begin using
 ; `parse-markdown` to parse the accumulated string
 (define-syntax md-module-begin
-  (make-accumulating-module-begin #'parse-markdown))
+  (make-accumulating-module-begin #'values->parsed-markdown))

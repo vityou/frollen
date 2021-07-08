@@ -46,10 +46,11 @@
   ; which takes care of whether it should be treated as markdown
   ; or plain text or whatever
   (define (md-read-syntax src in)
-    (with-syntax ([stx (my-at-reader src in)])
+    (let ([stx (my-at-reader src in)])
       (strip-context
        #`(module anything frollen/markdown
-           stx)))))
+           (define-meta path #,src)
+           #,@stx)))))
 ; end of reader module
 
 

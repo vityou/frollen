@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require "module-lang-utils.rkt"
-         "to-string.rkt"
          racket/contract
          (for-syntax racket/base))
 
@@ -10,7 +9,6 @@
          (except-out (all-from-out racket/base)
                      #%module-begin
                      #%top))
-
 
 ; create reader module
 (module reader racket/base
@@ -47,19 +45,18 @@
   (define (md-read-syntax src in)
     (let ([stx (my-at-reader src in)])
       (strip-context
-       #`(module anything frollen/pre
+       #`(module anything frollen/markup
            (define-meta path #,src)
            #,@stx)))))
 ; end of reader module
 
 
-; convert values to strings, conglomerate into 1 string,
-; and ignore given root-proc
-(define/contract (accumulate-to-string list-of-values root-proc)
-  (-> list? procedure? string?)
-  (apply string-append (map to-string list-of-values)))
+; just remove voids and apply the root proc
+(define/contract (apply-root list-of-values root-proc)
+  (-> list? procedure? list?)
+  (apply root-proc (filter (not/c void?) list-of-values)))
 
 ; create a string accumulating module begin using
 ; `accumulate-to-string` to parse the accumulated string
 (define-syntax md-module-begin
-  (make-accumulating-module-begin #'accumulate-to-string))
+  (make-accumulating-module-begin #'apply-root))
